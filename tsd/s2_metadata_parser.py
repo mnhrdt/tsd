@@ -33,7 +33,6 @@ import datetime
 
 import dateutil.parser
 import requests
-import xmltodict
 
 from tsd import search_scihub, utils
 
@@ -427,6 +426,7 @@ class Sentinel2Image(dict):
         """
         Get satellite mean zenith and azimuth angles from xml metadata file.
         """
+        import xmltodict
         metadata_xml = get_roda_metadata(self, filename="metadata.xml")
         if metadata_xml:
             d = xmltodict.parse(metadata_xml)

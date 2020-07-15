@@ -5,13 +5,11 @@ import json
 import requests
 import shapely.geometry
 import numpy as np
-import pandas as pd
 
 # from pandas.io import gbq
-from google.cloud import bigquery
 
 from bs4 import BeautifulSoup
-from tqdm import tqdm
+#from tqdm import tqdm
 from tsd import utils
 
 from pyproj import Proj, transform
@@ -25,6 +23,7 @@ def parse_url(url):
 
 
 def get_footprint(img, source='roda'):
+    import pandas as pd
     mgrs = img['mgrs_tile']
     date = pd.to_datetime(img['sensing_time'])
 
@@ -110,6 +109,8 @@ def search(aoi, start_date=None, end_date=None, satellite='Sentinel-2', sensor=N
     Args:
         aoi: geojson.Polygon or geojson.Point object
     """
+    import pandas as pd
+    from google.cloud import bigquery
     # compute the centroid of the area of interest
     lon, lat = shapely.geometry.shape(aoi).centroid.coords.xy
     lon, lat = lon[0], lat[0]

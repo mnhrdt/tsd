@@ -28,7 +28,6 @@ import json
 import argparse
 import multiprocessing
 
-import area
 import requests
 import numpy as np
 import dateutil.parser
@@ -325,6 +324,7 @@ def get_time_series(aoi, start_date=None, end_date=None,
     """
     Main function: crop and download Planet images.
     """
+    import area
     # list available images
     items = search_planet.search(aoi, start_date, end_date,
                                  item_types=item_types,

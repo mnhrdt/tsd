@@ -27,7 +27,7 @@ import datetime
 
 import dateutil.parser
 import requests
-import xmltodict
+#import xmltodict
 
 from tsd import search_scihub, utils
 

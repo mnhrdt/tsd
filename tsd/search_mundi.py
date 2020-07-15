@@ -1,6 +1,5 @@
 import argparse
 import requests
-import xmltodict
 
 
 MUNDI_SEARCH_URL = 'https://catalog-browse.default.mundiwebservices.com/acdc/catalog/proxy/search'
@@ -16,6 +15,7 @@ def mundi_download_url_for_given_safe(safe_title):
     Return:
         url to that SAFE zip file hosted at Mundi
     """
+    import xmltodict
     r = requests.get('{}/Sentinel1/opensearch?uid={}'.format(MUNDI_SEARCH_URL, safe_title))
     if r.ok:
         d = xmltodict.parse(r.text)
