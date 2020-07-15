@@ -90,20 +90,25 @@ def build_scihub_query(aoi, start_date=None, end_date=None,
 
     # build the url used to query the scihub API
     query = 'platformname:{}'.format(satellite)
-    query += ' AND producttype:{}'.format(product_type)
+    if product_type is not None:
+        query += ' AND producttype:{}'.format(product_type)
     if satellite == 'Sentinel-1':
         query += ' AND sensoroperationalmode:{}'.format(operational_mode)
     query += ' AND beginposition:[{}Z TO {}Z]'.format(start_date.isoformat(),
                                                       end_date.isoformat())
     if relative_orbit_number is not None:
-        query += ' AND relativeorbitnumber:{}'.format(relative_orbit_number)
+        if relative_orbit_number > 175:
+            query += f' AND orbitnumber:{relative_orbit_number}'
+        else:
+            query += f' AND relativeorbitnumber:{relative_orbit_number}'
 
     if swath_identifier is not None:
         query += ' AND swathidentifier:{}'.format(swath_identifier)
 
     # queried polygon or point
     # http://forum.step.esa.int/t/advanced-search-in-data-hub-contains-intersects/1150/2
-    query += ' AND footprint:\"{}({})\"'.format(search_type,
+    if aoi is not None:
+        query += ' AND footprint:\"{}({})\"'.format(search_type,
                                                 shapely.geometry.shape(aoi).wkt)
 
     return query
@@ -199,6 +204,8 @@ def search(aoi, start_date=None, end_date=None, satellite='Sentinel-1',
 
     if satellite == 'Sentinel-5':
         api = 's5phub'
+        if product_type == 'GRD':
+            product_type = None;
 
     query = build_scihub_query(aoi, start_date, end_date, satellite,
                                product_type, operational_mode,
@@ -215,14 +222,14 @@ def search(aoi, start_date=None, end_date=None, satellite='Sentinel-1',
                                                            creds)]
 
     # check if the image footprint contains the area of interest
-    not_covering = []
-    aoi_shape = shapely.geometry.shape(aoi)
-    for x in results:
-        if not shapely.wkt.loads(x['footprint']).contains(aoi_shape):
-            not_covering.append(x)
-
-    for x in not_covering:
-        results.remove(x)
+    if aoi is not None:
+        not_covering = []
+        aoi_shape = shapely.geometry.shape(aoi)
+        for x in results:
+            if not shapely.wkt.loads(x['footprint']).contains(aoi_shape):
+                not_covering.append(x)
+        for x in not_covering:
+            results.remove(x)
 
     return results
 
@@ -251,6 +258,7 @@ if __name__ == '__main__':
                         help='(for S1) acquisiton mode: SM, IW, EW or WV')
     parser.add_argument('--swath-identifier',
                         help='(for S1) subswath id: S1..S6 or IW1..IW3 or EW1..EW5')
+    parser.add_argument('-n', '--orbit-number', type=int, default=None)
     parser.add_argument('--api', default='copernicus',
                         help='mirror to use: copernicus, austria or finland')
     args = parser.parse_args()
@@ -258,18 +266,22 @@ if __name__ == '__main__':
     if args.geom and (args.lat or args.lon):
         parser.error('--geom and {--lat, --lon} are mutually exclusive')
 
-    if not args.geom and (not args.lat or not args.lon):
-        parser.error('either --geom or {--lat, --lon} must be defined')
+    if not args.geom and (not args.lat or not args.lon) and not args.orbit_number:
+        parser.error('either --geom or {--lat, --lon} or -n must be defined')
 
-    if args.geom:
-        aoi = args.geom
+    if args.orbit_number:
+        aoi = None
     else:
-        aoi = utils.geojson_geometry_object(args.lat, args.lon, args.width,
-                                            args.height)
+        if args.geom:
+            aoi = args.geom
+        else:
+            aoi = utils.geojson_geometry_object(args.lat, args.lon, args.width,
+                                                    args.height)
 
     print(json.dumps(search(aoi, args.start_date, args.end_date,
                             satellite=args.satellite,
                             product_type=args.product_type,
                             operational_mode=args.operational_mode,
+                            relative_orbit_number=args.orbit_number,
                             swath_identifier=args.swath_identifier,
                             api=args.api)))
